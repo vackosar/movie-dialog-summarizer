@@ -1,9 +1,9 @@
 getStart () {
-	grep -B2 "${match}" "${subtitles}" |
+	grep -B2 "${match}" "tmp/subtitles.txt" |
 		grep '[0-9][0-9]:[0-9][0-9]' | tr ',' '.' |awk '{print $1}'; 
 }
 getEnd () {
-	grep -B2 "${match}" "${subtitles}" |
+	grep -B2 "${match}" "tmp/subtitles.txt" |
 		grep '[0-9][0-9]:[0-9][0-9]' | tr ',' '.' |awk '{print $3}';
 }
 addSeconds() {
@@ -13,7 +13,7 @@ matchStart () {
 	end=$((lenght-1));
         while ! [ ${end} = ${position} ]; do
                 match="${line:position:end}";
-                if grep -q "${match}" "${subtitles}"; then
+                if grep -q "${match}" "tmp/subtitles.txt"; then
                         addSeconds "$(getStart)" "-1";
                         return;
                 fi;
@@ -31,7 +31,7 @@ matchEnd () {
 	end=$((lenght-1));
         while ! [ ${end} = ${position} ]; do
                 match="${line:position:end}";
-                if grep -q "${match}" "${subtitles}"; then
+                if grep -q "${match}" "tmp/subtitles.txt"; then
                         stamp="$(getEnd)";
 			echo "$(date --date "@$(($(date --date "$stamp" +%s)+3))" +%H:%M:%S)";
                         return;
@@ -50,8 +50,14 @@ match () {
 	cat /dev/null | ffmpeg -nostats -loglevel panic -i "$movie" -ss "${start}" -to "${finish}" -c copy tmp/output${lineId}.mp4;
 	lineId=$((lineId+1));
 }
+sanitizeSubtitles () {
+	cat "$subtitles" |
+                tr '-' '_' | tr -d '\r' |
+                iconv -c -t UTF-8 > tmp/subtitles.txt > tmp/subtitles.txt;
+}
 summarize () {
-	cat "$subtitles" |grep -v '^[ ]*$' | tr '-' '_' |grep -v '[0-9]' |
+	cat tmp/subtitles.txt |
+		grep -v '^[ ]*$' | tr '-' '_' |grep -v '[0-9]' | tr -d '\r' |
 		iconv -c -t UTF-8 > tmp/dialogs.utf.txt;
 	~/.local/bin/sumy lex-rank --length=10 --file tmp/dialogs.utf.txt > tmp/dialogs.utf.summary.txt;
 }
@@ -60,8 +66,9 @@ main () {
 	subtitles="$2";
 	rm tmp/* || true;
 	rm out/output.mp4 || true;
-	lineId=0;
+	sanitizeSubtitles;
 	summarize;
+	lineId=0;
 	cat tmp/dialogs.utf.summary.txt |
 	while read line; do
 		match "${line}";
