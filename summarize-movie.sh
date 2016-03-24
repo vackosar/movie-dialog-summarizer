@@ -1,9 +1,9 @@
 getStart () {
-	grep -B2 "${match}" "tmp/subtitles.txt" |
+	grep -B1 "${match}" "tmp/subtitles.txt" |
 		grep '[0-9][0-9]:[0-9][0-9]' | tr ',' '.' |awk '{print $1}'; 
 }
 getEnd () {
-	grep -B2 "${match}" "tmp/subtitles.txt" |
+	grep -B1 "${match}" "tmp/subtitles.txt" |
 		grep '[0-9][0-9]:[0-9][0-9]' | tr ',' '.' |awk '{print $3}';
 }
 addSeconds() {
@@ -46,20 +46,30 @@ match () {
 	position=0;
 	start="$(matchStart)";
 	finish="$(matchEnd)";
-	echo "${start} ${finish}";
+	echo "${start} ${finish} ${line}";
 	cat /dev/null | ffmpeg -nostats -loglevel panic -i "$movie" -ss "${start}" -to "${finish}" -c copy tmp/output${lineId}.mp4;
 	lineId=$((lineId+1));
 }
 sanitizeSubtitles () {
 	cat "$subtitles" |
-                tr '-' '_' | tr -d '\r' |
-                iconv -c -t UTF-8 > tmp/subtitles.txt > tmp/subtitles.txt;
+		sed 's/([^)]*)//g' |
+		sed 's/<[^>]*>//g' |
+                tr '-' '_' | tr '(' '_' | tr ')' '_' | tr -d '\r' | grep -v '^[0-9]*$' |
+		while read line; do
+			if ! echo "$line" | grep -q '^[0-9]'; then
+				echo -n "$line ";
+			else
+				echo; echo;
+				echo "$line";
+			fi;
+		done |
+                iconv -c -t UTF-8 > tmp/subtitles.txt;
 }
 summarize () {
 	cat tmp/subtitles.txt |
 		grep -v '^[ ]*$' | tr '-' '_' |grep -v '[0-9]' | tr -d '\r' |
 		iconv -c -t UTF-8 > tmp/dialogs.utf.txt;
-	~/.local/bin/sumy lex-rank --length=10 --file tmp/dialogs.utf.txt > tmp/dialogs.utf.summary.txt;
+	~/.local/bin/sumy lex-rank --length=15 --file tmp/dialogs.utf.txt > tmp/dialogs.utf.summary.txt;
 }
 main () {
 	movie="$1";
@@ -73,7 +83,7 @@ main () {
 	while read line; do
 		match "${line}";
 	done;
-	cat /dev/null |ffmpeg -f concat -i <(ls -1 tmp/output*|sed "s|\(.*\)|file '$PWD/\1'|") -c copy out/output.mp4
+	cat /dev/null |ffmpeg -nostats -loglevel panic -f concat -i <(ls -1 tmp/output*|sed "s|\(.*\)|file '$PWD/\1'|") -c copy out/output.mp4
 }
 set -ue
 main "$@";
