@@ -46,25 +46,37 @@ match () {
 	position=0;
 	start="$(matchStart)";
 	finish="$(matchEnd)";
-	echo "${lineId} ${start} ${finish} ${line}" >> tmp/extracts.txt;
-	cat /dev/null | ffmpeg -nostats -loglevel panic -i "$movie" -ss "${start}" -to "${finish}" -c copy tmp/output${lineId}.mp4;
-	lineId=$((lineId+1));
+	echo "${start} ${finish} ${line}" >> tmp/extracts.txt;
+}
+extract () {
+	lineId=0;
+	cat tmp/extracts.txt |sort >tmp/extracts-sorted.txt;
+	cat tmp/extracts-sorted.txt |
+	while read line; do
+		start="$(echo "$line"|awk '{print $1}')";
+		finish="$(echo "$line"|awk '{print $2}')";
+		echo "$start $finish";
+		echo "file '${PWD}/tmp/output${lineId}.mp4'" >> tmp/concate.txt;
+		cat /dev/null | 
+			ffmpeg -nostats -loglevel panic -i "$movie" -ss "${start}" -to "${finish}" -strict -2 tmp/output${lineId}.mp4;
+		lineId=$((lineId+1));
+	done;
 }
 sanitizeSubtitles () {
 	cat "$subtitles" |
-		sed 's/\.\+/\./g' |
-		sed 's/([^)]*)//g' |
-		sed 's/<[^>]*>//g' |
-                tr '-' '_' | tr '(' '_' | tr ')' '_' | tr -d '\r' | grep -v '^[0-9]*$' |
-		while read line; do
-			if ! echo "$line" | grep -q '^[0-9]'; then
-				echo -n "$line ";
-			else
-				echo; echo;
-				echo "$line";
-			fi;
-		done |
-                iconv -c -t UTF-8 > tmp/subtitles.txt;
+                iconv -c -t UTF-8 |
+                sed 's/\.\+/\./g' |
+                sed 's/([^)]*)//g' |
+                sed 's/<[^>]*>//g' |
+                tr '-' '_' | tr -d '\r' | grep -v '^[0-9]*$' |
+                while read line; do
+                        if ! echo "$line" | grep -q '^[0-9]'; then
+                                echo -n "$line ";
+                        else
+                                echo; echo;
+                                echo "$line";
+                        fi;
+                done > tmp/subtitles.txt;
 }
 summarize () {
 	cat tmp/subtitles.txt |
@@ -79,12 +91,12 @@ main () {
 	rm out/output.mp4 || true;
 	sanitizeSubtitles;
 	summarize;
-	lineId=0;
 	cat tmp/dialogs.utf.summary.txt |
 	while read line; do
 		match "${line}";
 	done;
-	cat /dev/null |ffmpeg -nostats -loglevel panic -f concat -i <(ls -1 tmp/output*|sed "s|\(.*\)|file '$PWD/\1'|") -c copy out/output.mp4
+	extract;
+	cat /dev/null |ffmpeg -nostats -loglevel panic -f concat -i tmp/concate.txt -c copy out/output.mp4
 }
 set -ue
 main "$@";
