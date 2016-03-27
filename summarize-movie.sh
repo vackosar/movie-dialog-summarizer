@@ -7,7 +7,7 @@ getEnd () {
 		grep '[0-9][0-9]:[0-9][0-9]' | tr ',' '.' |awk '{print $3}';
 }
 addSeconds() {
-	echo "$(date --date "@$(($(date --date "${1}" +%s)+${2}))" +%H:%M:%S)";
+	echo "$(date --date "@$(($(date --date "2015-01-01 ${1}" +%s)+${2}))" +%H:%M:%S)";
 }
 matchStart () {
 	end=$lenght;
@@ -32,8 +32,7 @@ matchEnd () {
         while ! [ ${end} = ${position} ]; do
                 match="${line:position:end}";
                 if grep -q "${match//\./\\.}" "tmp/$name-subtitles.txt"; then
-                        stamp="$(getEnd)";
-			echo "$(date --date "@$(($(date --date "$stamp" +%s)+3))" +%H:%M:%S)";
+			addSeconds "$(getEnd)" "3";
                         return;
                 fi;
                 position=$((position+1));
@@ -58,7 +57,7 @@ extract () {
 		echo "$start $finish";
 		echo "file '${PWD}/tmp/$name-summary${lineId}.mp4'" >> tmp/$name-concate.txt;
 		cat /dev/null | 
-			ffmpeg -nostats -loglevel panic -i "$movie" -ss "${start}" -to "${finish}" -strict -2 tmp/$name-summary${lineId}.mp4;
+			ffmpeg -nostats -loglevel panic -i "$movie" -ss "${start}" -to "${finish}" $OPTIONS tmp/$name-summary${lineId}.mp4;
 		lineId=$((lineId+1));
 	done;
 	cat /dev/null |ffmpeg -nostats -loglevel panic -f concat -i tmp/$name-concate.txt -c copy out/$name-summary.mp4
@@ -89,7 +88,12 @@ main () {
 	movie="$1";
 	name="$(basename "$1")";
 	subtitles="$2";
-	rm tmp/* || true;
+	if [ "$#" = 3 ] && [ "$3" = "-fast" ]; then
+		OPTIONS="-c copy";	
+	else
+		OPTIONS="-strict -2";
+	fi
+	rm tmp/$name-* || true;
 	rm out/$name-summary.mp4 || true;
 	sanitizeSubtitles;
 	summarize;
