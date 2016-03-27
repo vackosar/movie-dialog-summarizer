@@ -1,10 +1,12 @@
-getStart () {
+getStamps () {
 	grep -B1 "${match//\./\\.}" "tmp/$name-subtitles.txt" |
-		grep '[0-9][0-9]:[0-9][0-9]' | tr ',' '.' |awk '{print $1}'; 
+                grep '[0-9][0-9]:[0-9][0-9]' | tr ',' '.'
+}
+getStart () {
+	getStamps | awk '{print $1}'; 
 }
 getEnd () {
-	grep -B1 "${match//\./\\.}" "tmp/$name-subtitles.txt" |
-		grep '[0-9][0-9]:[0-9][0-9]' | tr ',' '.' |awk '{print $3}';
+	getStamps | awk '{print $3}'; 
 }
 addSeconds() {
 	echo "$(date --date "@$(($(date --date "2015-01-01 ${1}" +%s)+${2}))" +%H:%M:%S)";
