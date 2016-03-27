@@ -1,9 +1,9 @@
 getStart () {
-	grep -B1 "${match//\./\\.}" "tmp/subtitles.txt" |
+	grep -B1 "${match//\./\\.}" "tmp/$name-subtitles.txt" |
 		grep '[0-9][0-9]:[0-9][0-9]' | tr ',' '.' |awk '{print $1}'; 
 }
 getEnd () {
-	grep -B1 "${match//\./\\.}" "tmp/subtitles.txt" |
+	grep -B1 "${match//\./\\.}" "tmp/$name-subtitles.txt" |
 		grep '[0-9][0-9]:[0-9][0-9]' | tr ',' '.' |awk '{print $3}';
 }
 addSeconds() {
@@ -13,7 +13,7 @@ matchStart () {
 	end=$lenght;
         while ! [ ${end} = ${position} ]; do
                 match="${line:position:end}";
-                if grep -q "${match//\./\\.}" "tmp/subtitles.txt"; then
+                if grep -q "${match//\./\\.}" "tmp/$name-subtitles.txt"; then
                         addSeconds "$(getStart)" "-1";
                         return;
                 fi;
@@ -31,7 +31,7 @@ matchEnd () {
 	end=${lenght};
         while ! [ ${end} = ${position} ]; do
                 match="${line:position:end}";
-                if grep -q "${match//\./\\.}" "tmp/subtitles.txt"; then
+                if grep -q "${match//\./\\.}" "tmp/$name-subtitles.txt"; then
                         stamp="$(getEnd)";
 			echo "$(date --date "@$(($(date --date "$stamp" +%s)+3))" +%H:%M:%S)";
                         return;
@@ -46,21 +46,22 @@ match () {
 	position=0;
 	start="$(matchStart)";
 	finish="$(matchEnd)";
-	echo "${start} ${finish} ${line}" >> tmp/extracts.txt;
+	echo "${start} ${finish} ${line}" >> tmp/$name-extracts.txt;
 }
 extract () {
 	lineId=0;
-	cat tmp/extracts.txt |sort >tmp/extracts-sorted.txt;
-	cat tmp/extracts-sorted.txt |
+	cat tmp/$name-extracts.txt |sort >tmp/$name-extracts-sorted.txt;
+	cat tmp/$name-extracts-sorted.txt |
 	while read line; do
 		start="$(echo "$line"|awk '{print $1}')";
 		finish="$(echo "$line"|awk '{print $2}')";
 		echo "$start $finish";
-		echo "file '${PWD}/tmp/output${lineId}.mp4'" >> tmp/concate.txt;
+		echo "file '${PWD}/tmp/$name-summary${lineId}.mp4'" >> tmp/$name-concate.txt;
 		cat /dev/null | 
-			ffmpeg -nostats -loglevel panic -i "$movie" -ss "${start}" -to "${finish}" -strict -2 tmp/output${lineId}.mp4;
+			ffmpeg -nostats -loglevel panic -i "$movie" -ss "${start}" -to "${finish}" -strict -2 tmp/$name-summary${lineId}.mp4;
 		lineId=$((lineId+1));
 	done;
+	cat /dev/null |ffmpeg -nostats -loglevel panic -f concat -i tmp/$name-concate.txt -c copy out/$name-summary.mp4
 }
 sanitizeSubtitles () {
 	cat "$subtitles" |
@@ -76,27 +77,27 @@ sanitizeSubtitles () {
                                 echo; echo;
                                 echo "$line";
                         fi;
-                done > tmp/subtitles.txt;
+                done > tmp/$name-subtitles.txt;
 }
 summarize () {
-	cat tmp/subtitles.txt |
+	cat tmp/$name-subtitles.txt |
 		grep -v '^[ ]*$' | tr '-' '_' |grep -v '[0-9]' | tr -d '\r' |
-		iconv -c -t UTF-8 > tmp/dialogs.utf.txt;
-	~/.local/bin/sumy lex-rank --length=15 --file tmp/dialogs.utf.txt > tmp/dialogs.utf.summary.txt;
+		iconv -c -t UTF-8 > tmp/$name-dialogs.utf.txt;
+	~/.local/bin/sumy lex-rank --length=15 --file tmp/$name-dialogs.utf.txt > tmp/$name-dialogs.utf.summary.txt;
 }
 main () {
 	movie="$1";
+	name="$(basename "$1")";
 	subtitles="$2";
 	rm tmp/* || true;
-	rm out/output.mp4 || true;
+	rm out/$name-summary.mp4 || true;
 	sanitizeSubtitles;
 	summarize;
-	cat tmp/dialogs.utf.summary.txt |
+	cat tmp/$name-dialogs.utf.summary.txt |
 	while read line; do
 		match "${line}";
 	done;
 	extract;
-	cat /dev/null |ffmpeg -nostats -loglevel panic -f concat -i tmp/concate.txt -c copy out/output.mp4
 }
 set -ue
 main "$@";
