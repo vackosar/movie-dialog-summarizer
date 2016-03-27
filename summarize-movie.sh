@@ -65,7 +65,8 @@ extract () {
 sanitizeSubtitles () {
 	cat "$subtitles" |
                 iconv -c -t UTF-8 |
-                sed 's/\.\+/\./g' |
+		# Tripple dot overuse causes trouble.
+                #sed 's/\.\+/\./g' | 
                 sed 's/([^)]*)//g' |
                 sed 's/<[^>]*>//g' |
                 tr '-' '_' | tr -d '\r' | grep -v '^[0-9]*$' |
