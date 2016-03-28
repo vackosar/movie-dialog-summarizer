@@ -1,6 +1,6 @@
 getStamps () {
 	grep -F -B1 "${match}" "tmp/$name-subtitles.txt" |
-                grep '[0-9][0-9]:[0-9][0-9]' | tr ',' '.'
+                grep '^[0-9][0-9]:[0-9][0-9]' | tr ',' '.'
 }
 getStart () {
 	getStamps | awk '{print $1}'; 
