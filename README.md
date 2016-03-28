@@ -1,5 +1,5 @@
 # movie-dialog-summarizer
-Cuts movie dialog summary video. 
+Cuts movie dialog summary video from video file and subtitles.
 
 # Examples
 - [The Shawshank Redemption Dialog Summary](https://youtu.be/FZdDk7A4t1A)
