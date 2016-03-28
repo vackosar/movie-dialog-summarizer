@@ -14,4 +14,4 @@ Cuts movie dialog summary video from video file and subtitles.
 - [ffmpeg](https://github.com/FFmpeg/FFmpeg)
 
 # Usage
-./summarize-movie-dialog.sh [video file] [subtitles ".srt" file]
+    ./summarize-movie-dialog.sh [video file] [subtitles ".srt" file]
