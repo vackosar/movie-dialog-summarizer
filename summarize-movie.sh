@@ -1,5 +1,5 @@
 getStamps () {
-	grep -B1 "${match//\./\\.}" "tmp/$name-subtitles.txt" |
+	grep -F -B1 "${match}" "tmp/$name-subtitles.txt" |
                 grep '[0-9][0-9]:[0-9][0-9]' | tr ',' '.'
 }
 getStart () {
@@ -15,7 +15,7 @@ matchStart () {
 	end=$lenght;
         while ! [ ${end} = ${position} ]; do
                 match="${line:position:end}";
-                if grep -q "${match//\./\\.}" "tmp/$name-subtitles.txt"; then
+                if grep -qF "${match}" "tmp/$name-subtitles.txt"; then
                         addSeconds "$(getStart)" "-1";
                         return;
                 fi;
@@ -33,7 +33,7 @@ matchEnd () {
 	end=${lenght};
         while ! [ ${end} = ${position} ]; do
                 match="${line:position:end}";
-                if grep -q "${match//\./\\.}" "tmp/$name-subtitles.txt"; then
+                if grep -qF "${match}" "tmp/$name-subtitles.txt"; then
 			addSeconds "$(getEnd)" "3";
                         return;
                 fi;
