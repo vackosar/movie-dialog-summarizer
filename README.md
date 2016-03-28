@@ -12,3 +12,6 @@ Cuts movie dialog summary video from video file and subtitles.
 - [LexRank](https://en.wikipedia.org/wiki/Automatic_summarization#TextRank_and_LexRank)
 - [Sumy](https://github.com/miso-belica/sumy)
 - [ffmpeg](https://github.com/FFmpeg/FFmpeg)
+
+# Usage
+./summarize-movie-dialog.sh [video file] [subtitles ".srt" file]
