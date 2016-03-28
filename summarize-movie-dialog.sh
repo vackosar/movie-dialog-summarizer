@@ -42,12 +42,14 @@ matchEnd () {
 	echo "Failed to match end of line: $line"; exit 1;
 }
 match () {
-	line="${1}";
-	lenght="${#line}";
-	position=0;
-	start="$(matchStart)";
-	finish="$(matchEnd)";
-	echo "${start} ${finish} ${line}" >> tmp/$name-extracts.txt;
+	cat tmp/$name-dialogs.utf.summary.txt |
+	while read line; do
+		lenght="${#line}";
+		position=0;
+		start="$(matchStart)";
+		finish="$(matchEnd)";
+		echo "${start} ${finish} ${line}" >> tmp/$name-extracts.txt;
+	done;
 }
 extract () {
 	lineId=0;
@@ -59,7 +61,7 @@ extract () {
 		echo "$start $finish";
 		echo "file '${PWD}/tmp/$name-summary${lineId}.mp4'" >> tmp/$name-concate.txt;
 		cat /dev/null | 
-			ffmpeg -nostats -loglevel panic -i "$movie" -ss "${start}" -to "${finish}" $OPTIONS tmp/$name-summary${lineId}.mp4;
+			ffmpeg -nostats -loglevel panic -i "$movie" -ss "${start}" -to "${finish}" -map_metadata -1 $OPTIONS tmp/$name-summary${lineId}.mp4;
 		lineId=$((lineId+1));
 	done;
 	cat /dev/null |ffmpeg -nostats -loglevel panic -f concat -i tmp/$name-concate.txt -c copy out/$name-summary.mp4
@@ -99,10 +101,7 @@ main () {
 	rm out/$name-summary.mp4 || true;
 	sanitizeSubtitles;
 	summarize;
-	cat tmp/$name-dialogs.utf.summary.txt |
-	while read line; do
-		match "${line}";
-	done;
+	match;
 	extract;
 }
 set -ue
