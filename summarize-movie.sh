@@ -10,7 +10,7 @@ getEnd () {
 }
 addSeconds() {
 	echo "$(date --date "@$(($(date --date "2015-01-01 ${1}" +%s)+${2}))" +%H:%M:%S)";
-}
+} && (addSeconds "01:03:22.777" "1" |grep -q '01:03:23') || exit 1;
 matchStart () {
 	end=$lenght;
         while ! [ ${end} = ${position} ]; do
@@ -76,15 +76,14 @@ sanitizeSubtitles () {
                         if ! echo "$line" | grep -q '^[0-9]'; then
                                 echo -n "$line ";
                         else
-                                echo; echo;
+                                echo; 
                                 echo "$line";
                         fi;
-                done > tmp/$name-subtitles.txt;
+                done |
+		grep -v '^[ ]*$' > tmp/$name-subtitles.txt;
 }
 summarize () {
-	cat tmp/$name-subtitles.txt |
-		grep -v '^[ ]*$' | tr '-' '_' |grep -v '[0-9]' | tr -d '\r' |
-		iconv -c -t UTF-8 > tmp/$name-dialogs.utf.txt;
+	cat tmp/$name-subtitles.txt |grep -v '^[0-9]' > tmp/$name-dialogs.utf.txt;
 	~/.local/bin/sumy lex-rank --length=15 --file tmp/$name-dialogs.utf.txt > tmp/$name-dialogs.utf.summary.txt;
 }
 main () {
